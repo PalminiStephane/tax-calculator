@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.autoentrepreneur.urssaf.fr)",
+      "WebFetch(domain:www.service-public.fr)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebSearch",
+      "WebFetch(domain:vite.dev)",
+      "WebFetch(domain:www.urssaf.fr)",
+      "WebFetch(domain:www.impots.gouv.fr)",
+      "WebFetch(domain:bpifrance-creation.fr)",
+      "WebFetch(domain:mon-entreprise.urssaf.fr)",
+      "WebFetch(domain:www.economie.gouv.fr)",
+      "WebFetch(domain:www.portail-autoentrepreneur.fr)",
+      "WebFetch(domain:propulsebyca.fr)",
+      "WebFetch(domain:lamicrobyflo.fr)",
+      "WebFetch(domain:entreprendre.service-public.gouv.fr)",
+      "WebFetch(domain:www.compta-online.com)",
+      "WebFetch(domain:www.legisocial.fr)",
+      "WebFetch(domain:www.lecoindesentrepreneurs.fr)",
+      "Bash(npm create:*)",
+      "Bash(kill %1:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
