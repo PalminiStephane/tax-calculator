@@ -1,7 +1,5 @@
-import { TrendingDown, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { cn, formatCurrency, formatPercent } from '@/lib/utils'
+import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
+import { formatCurrency, formatPercent } from '@/lib/utils'
 import type { TaxResult } from '@/types'
 
 interface ResultsSummaryProps {
@@ -11,60 +9,52 @@ interface ResultsSummaryProps {
 
 export function ResultsSummary({ result, annualCA }: ResultsSummaryProps) {
   const chargesPercent = annualCA > 0 ? result.totalURSSAF / annualCA : 0
+  const isPositive = result.revenueNet >= 0
 
   return (
-    <div className="space-y-4">
-      {/* Grandes métriques */}
-      <div className="grid grid-cols-2 gap-3">
-        <MetricCard
-          label="Revenu net"
-          value={formatCurrency(result.revenueNet)}
-          sub={`${formatPercent(result.revenueNetPercent)} du CA`}
-          icon={<TrendingUp className="h-4 w-4" />}
-          variant={result.revenueNet >= 0 ? 'success' : 'danger'}
-        />
-        <MetricCard
-          label="Total charges URSSAF"
-          value={formatCurrency(result.totalURSSAF)}
-          sub={`${formatPercent(chargesPercent)} du CA`}
-          icon={<TrendingDown className="h-4 w-4" />}
-          variant="neutral"
-        />
+    <div className="space-y-6">
+
+      {/* ── Hero metric: Revenu net ────────────────────────────── */}
+      <div>
+        <p className="mono-label mb-2">Revenu net estimé</p>
+        <div
+          className="metric-hero"
+          style={{ color: isPositive ? '#22D48F' : 'hsl(var(--destructive))' }}
+        >
+          {formatCurrency(result.revenueNet)}
+        </div>
+        <p className="font-data text-sm text-muted-foreground mt-1">
+          {formatPercent(result.revenueNetPercent)} du chiffre d'affaires
+        </p>
       </div>
 
-      {/* CA vs plafond */}
+      <div className="h-px bg-border" />
+
+      {/* ── Total charges URSSAF ────────────────────────────────── */}
+      <div>
+        <p className="mono-label mb-2">Total charges URSSAF</p>
+        <div className="font-display text-4xl text-destructive leading-none">
+          {formatCurrency(result.totalURSSAF)}
+        </div>
+        <p className="font-data text-sm text-muted-foreground mt-1">
+          {formatPercent(chargesPercent)} du chiffre d'affaires
+        </p>
+      </div>
+
+      <div className="h-px bg-border" />
+
+      {/* ── Plafond indicator ───────────────────────────────────── */}
       <PlafondIndicator
         ca={annualCA}
         plafond={result.caPlafond}
         isExceeded={result.isAboveCaPlafond}
       />
 
-      {/* Alertes */}
+      {/* ── Warnings ────────────────────────────────────────────── */}
       {result.warnings.length > 0 && (
         <div className="space-y-2">
           {result.warnings.map((warning, i) => (
-            <Alert
-              key={i}
-              variant={warning.type === 'error' ? 'destructive' : 'default'}
-              className={cn(
-                'py-2.5',
-                warning.type === 'warning' &&
-                  'border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-500',
-                warning.type === 'info' &&
-                  'border-blue-200 bg-blue-50 text-blue-800 [&>svg]:text-blue-500',
-              )}
-            >
-              {warning.type === 'error' ? (
-                <AlertTriangle className="h-3.5 w-3.5" />
-              ) : warning.type === 'warning' ? (
-                <AlertTriangle className="h-3.5 w-3.5" />
-              ) : (
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              )}
-              <AlertDescription className="text-xs leading-relaxed">
-                {warning.message}
-              </AlertDescription>
-            </Alert>
+            <WarningBanner key={i} type={warning.type} message={warning.message} />
           ))}
         </div>
       )}
@@ -72,83 +62,99 @@ export function ResultsSummary({ result, annualCA }: ResultsSummaryProps) {
   )
 }
 
-// ─── Sous-composants ──────────────────────────────────────────────────────────
+// ── Plafond bar ────────────────────────────────────────────────────────────────
 
-interface MetricCardProps {
-  label: string
-  value: string
-  sub: string
-  icon: React.ReactNode
-  variant: 'success' | 'danger' | 'neutral'
-}
+function PlafondIndicator({
+  ca,
+  plafond,
+  isExceeded,
+}: {
+  ca: number
+  plafond: number
+  isExceeded: boolean
+}) {
+  const pct = Math.min((ca / plafond) * 100, 100)
+  const barColor = isExceeded
+    ? 'hsl(var(--destructive))'
+    : pct >= 80
+      ? '#F59E0B'
+      : '#22D48F'
 
-function MetricCard({ label, value, sub, icon, variant }: MetricCardProps) {
   return (
-    <div
-      className={cn(
-        'rounded-lg border p-3 space-y-1',
-        variant === 'success' && 'border-green-200 bg-green-50',
-        variant === 'danger' && 'border-red-200 bg-red-50',
-        variant === 'neutral' && 'border-border bg-muted/30',
-      )}
-    >
-      <div className="flex items-center gap-1.5">
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="mono-label">Plafond micro-entreprise</p>
         <span
-          className={cn(
-            'text-muted-foreground',
-            variant === 'success' && 'text-green-600',
-            variant === 'danger' && 'text-red-600',
-          )}
+          className="font-data text-xs border px-2 py-0.5 leading-none"
+          style={{
+            borderColor: isExceeded ? 'hsl(var(--destructive))' : 'hsl(var(--border))',
+            color: isExceeded ? 'hsl(var(--destructive))' : 'hsl(var(--muted-foreground))',
+          }}
         >
-          {icon}
+          {isExceeded ? 'DÉPASSÉ' : `${pct.toFixed(0)} %`}
         </span>
-        <span className="text-xs text-muted-foreground font-medium">{label}</span>
       </div>
-      <p
-        className={cn(
-          'text-lg font-bold leading-none',
-          variant === 'success' && 'text-green-700',
-          variant === 'danger' && 'text-red-700',
-        )}
-      >
-        {value}
-      </p>
-      <p className="text-xs text-muted-foreground">{sub}</p>
+
+      {/* Track */}
+      <div className="bar-track">
+        <div
+          className="bar-fill"
+          style={{ width: `${pct}%`, background: barColor }}
+        />
+      </div>
+
+      <div className="flex justify-between font-data text-xs text-muted-foreground">
+        <span>{formatCurrency(ca)}</span>
+        <span className="text-muted-foreground/50">/ {formatCurrency(plafond)}</span>
+      </div>
     </div>
   )
 }
 
-interface PlafondIndicatorProps {
-  ca: number
-  plafond: number
-  isExceeded: boolean
-}
+// ── Warning banner ─────────────────────────────────────────────────────────────
 
-function PlafondIndicator({ ca, plafond, isExceeded }: PlafondIndicatorProps) {
-  const percentage = Math.min((ca / plafond) * 100, 100)
+const WARNING_CONFIG = {
+  error: {
+    Icon: XCircle,
+    borderColor: 'hsl(var(--destructive))',
+    bgColor: 'hsla(0, 82%, 60%, 0.06)',
+    textColor: 'hsl(var(--destructive))',
+    label: 'ERREUR',
+  },
+  warning: {
+    Icon: AlertTriangle,
+    borderColor: '#F59E0B',
+    bgColor: 'rgba(245,158,11,0.06)',
+    textColor: '#F59E0B',
+    label: 'ATTENTION',
+  },
+  info: {
+    Icon: CheckCircle2,
+    borderColor: 'hsl(var(--primary))',
+    bgColor: 'hsla(44,95%,52%,0.05)',
+    textColor: 'hsl(var(--primary))',
+    label: 'INFO',
+  },
+} as const
 
+function WarningBanner({ type, message }: { type: 'error' | 'warning' | 'info'; message: string }) {
+  const cfg = WARNING_CONFIG[type]
+  const { Icon } = cfg
   return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between items-center">
-        <span className="text-xs text-muted-foreground font-medium">
-          Plafond régime micro-entreprise
-        </span>
-        <Badge variant={isExceeded ? 'destructive' : 'secondary'} className="text-xs">
-          {isExceeded ? 'Dépassé' : `${percentage.toFixed(0)} %`}
-        </Badge>
+    <div
+      className="flex gap-3 px-3 py-3 border-l-2"
+      style={{ borderColor: cfg.borderColor, background: cfg.bgColor }}
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: cfg.textColor }} />
+      <div>
+        <p
+          className="font-data text-xs font-semibold tracking-widest mb-0.5"
+          style={{ color: cfg.textColor }}
+        >
+          {cfg.label}
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{message}</p>
       </div>
-      <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
-        <div
-          className={cn(
-            'h-full rounded-full transition-all duration-500',
-            isExceeded ? 'bg-destructive' : percentage >= 80 ? 'bg-amber-500' : 'bg-green-500',
-          )}
-          style={{ width: `${Math.min(percentage, 100)}%` }}
-        />
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {formatCurrency(ca)} / {formatCurrency(plafond)}
-      </p>
     </div>
   )
 }

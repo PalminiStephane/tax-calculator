@@ -1,15 +1,5 @@
-import { ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { cn, formatCurrency } from '@/lib/utils'
+import { ShieldCheck, ShieldAlert, ShieldX, Shield } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 import type { TaxResult } from '@/types'
 
 interface TvaSectionProps {
@@ -18,11 +8,17 @@ interface TvaSectionProps {
   tvaRateApplicable: number
 }
 
-export function TvaSection({ result, isTvaApplicable, tvaRateApplicable }: TvaSectionProps) {
-  const { isAboveTvaThresholdBase, isAboveTvaThresholdMajore, tvaThresholdBase, tvaThresholdMajore } = result
+type TvaStatus = 'franchise' | 'depasse_base' | 'depasse_majore' | 'assujetti'
 
-  // Statut de franchise TVA
-  const tvaStatus = isTvaApplicable
+export function TvaSection({ result, isTvaApplicable, tvaRateApplicable }: TvaSectionProps) {
+  const {
+    isAboveTvaThresholdBase,
+    isAboveTvaThresholdMajore,
+    tvaThresholdBase,
+    tvaThresholdMajore,
+  } = result
+
+  const tvaStatus: TvaStatus = isTvaApplicable
     ? 'assujetti'
     : isAboveTvaThresholdMajore
       ? 'depasse_majore'
@@ -31,89 +27,129 @@ export function TvaSection({ result, isTvaApplicable, tvaRateApplicable }: TvaSe
         : 'franchise'
 
   return (
-    <div className="space-y-4">
-      {/* Statut franchise */}
+    <div className="space-y-5">
+
+      {/* Status card */}
       <TvaStatusCard
         status={tvaStatus}
         thresholdBase={tvaThresholdBase}
         thresholdMajore={tvaThresholdMajore}
       />
 
-      {/* Tableau TVA si applicable */}
+      {/* TVA breakdown */}
       {isTvaApplicable && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-xs">Élément</TableHead>
-              <TableHead className="text-xs text-right">Montant</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell className="text-sm">
-                TVA collectée sur CA ({tvaRateApplicable} %)
-              </TableCell>
-              <TableCell className="text-right text-sm text-red-600 font-medium">
-                + {formatCurrency(result.tvaCollectee)}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="text-sm">
-                TVA déductible sur achats
-              </TableCell>
-              <TableCell className="text-right text-sm text-green-600 font-medium">
-                − {formatCurrency(result.tvaDeductibleAchats)}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell className="text-sm font-semibold">TVA nette à reverser</TableCell>
-              <TableCell
-                className={cn(
-                  'text-right text-sm font-semibold',
-                  result.tvaNette > 0 ? 'text-red-600' : 'text-green-600',
-                )}
-              >
-                {formatCurrency(result.tvaNette)}
-              </TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
+        <div>
+          <div className="data-row">
+            <p className="text-sm text-muted-foreground flex-1">
+              TVA collectée sur CA ({tvaRateApplicable}%)
+            </p>
+            <span className="mono-val text-destructive">
+              + {formatCurrency(result.tvaCollectee)}
+            </span>
+          </div>
+
+          <div className="data-row">
+            <p className="text-sm text-muted-foreground flex-1">TVA déductible sur achats</p>
+            <span className="mono-val" style={{ color: '#22D48F' }}>
+              − {formatCurrency(result.tvaDeductibleAchats)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t-2 border-primary/30 mt-1">
+            <p className="font-data text-sm font-semibold text-primary">TVA NETTE À REVERSER</p>
+            <span
+              className="font-display text-2xl leading-none"
+              style={{ color: result.tvaNette > 0 ? 'hsl(var(--destructive))' : '#22D48F' }}
+            >
+              {formatCurrency(result.tvaNette)}
+            </span>
+          </div>
+        </div>
       )}
 
-      {/* TVA déductible seulement (franchise + achats) */}
+      {/* TVA non récupérable */}
       {!isTvaApplicable && result.tvaDeductibleAchats > 0 && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-          <p className="text-xs text-amber-800">
-            <span className="font-semibold">TVA sur achats : </span>
-            {formatCurrency(result.tvaDeductibleAchats)} non récupérable en franchise.
-            La TVA payée sur vos achats professionnels n'est pas déductible tant que vous êtes en franchise en base.
+        <div
+          className="px-3 py-3 border-l-2"
+          style={{ borderColor: '#F59E0B', background: 'rgba(245,158,11,0.05)' }}
+        >
+          <p className="font-data text-xs font-semibold tracking-widest mb-1" style={{ color: '#F59E0B' }}>
+            TVA NON RÉCUPÉRABLE
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <span className="text-foreground">{formatCurrency(result.tvaDeductibleAchats)}</span>{' '}
+            de TVA sur vos achats ne peut pas être déduite en franchise en base.
           </p>
         </div>
       )}
 
-      <div className="text-xs text-muted-foreground space-y-1">
-        <p>
-          Seuil de base 2025 :{' '}
-          <span className="font-medium text-foreground">
-            {formatCurrency(tvaThresholdBase)}
-          </span>
-        </p>
-        <p>
-          Seuil majoré 2025 :{' '}
-          <span className="font-medium text-foreground">
-            {formatCurrency(tvaThresholdMajore)}
-          </span>
-        </p>
+      {/* Thresholds */}
+      <div className="grid grid-cols-2 gap-3">
+        <ThresholdBlock label="Seuil de base 2025"  value={formatCurrency(tvaThresholdBase)} />
+        <ThresholdBlock label="Seuil majoré 2025"   value={formatCurrency(tvaThresholdMajore)} />
       </div>
     </div>
   )
 }
 
-// ─── Sous-composant statut TVA ─────────────────────────────────────────────────
+// ── Status card ────────────────────────────────────────────────────────────────
 
-type TvaStatus = 'franchise' | 'depasse_base' | 'depasse_majore' | 'assujetti'
+function getStatusConfig(
+  status: TvaStatus,
+  thresholdBase: number,
+  thresholdMajore: number,
+): {
+  Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+  label: string
+  badge: string
+  borderColor: string
+  bgColor: string
+  textColor: string
+  description: string
+} {
+  switch (status) {
+    case 'franchise':
+      return {
+        Icon: ShieldCheck,
+        label: 'FRANCHISE EN BASE',
+        badge: 'OK',
+        borderColor: '#22D48F',
+        bgColor: 'rgba(34,212,143,0.05)',
+        textColor: '#22D48F',
+        description: `CA sous ${formatCurrency(thresholdBase)}. Mention obligatoire sur factures : "TVA non applicable — art. 293 B du CGI".`,
+      }
+    case 'depasse_base':
+      return {
+        Icon: ShieldAlert,
+        label: 'SEUIL DE BASE DÉPASSÉ',
+        badge: 'ATTENTION',
+        borderColor: '#F59E0B',
+        bgColor: 'rgba(245,158,11,0.05)',
+        textColor: '#F59E0B',
+        description: `CA dépasse ${formatCurrency(thresholdBase)}. Si votre CA de l'an passé était aussi supérieur, vous devez facturer la TVA.`,
+      }
+    case 'depasse_majore':
+      return {
+        Icon: ShieldX,
+        label: 'SEUIL MAJORÉ DÉPASSÉ',
+        badge: 'CRITIQUE',
+        borderColor: 'hsl(var(--destructive))',
+        bgColor: 'hsla(0,82%,60%,0.05)',
+        textColor: 'hsl(var(--destructive))',
+        description: `CA dépasse ${formatCurrency(thresholdMajore)}. TVA obligatoire dès le jour du dépassement.`,
+      }
+    case 'assujetti':
+      return {
+        Icon: Shield,
+        label: 'ASSUJETTI À LA TVA',
+        badge: 'ACTIF',
+        borderColor: 'hsl(var(--primary))',
+        bgColor: 'hsla(44,95%,52%,0.05)',
+        textColor: 'hsl(var(--primary))',
+        description: 'Vous collectez la TVA et pouvez déduire la TVA sur vos achats professionnels.',
+      }
+  }
+}
 
 function TvaStatusCard({
   status,
@@ -124,61 +160,40 @@ function TvaStatusCard({
   thresholdBase: number
   thresholdMajore: number
 }) {
-  const config = {
-    franchise: {
-      icon: <ShieldCheck className="h-4 w-4" />,
-      label: 'Franchise en base de TVA',
-      description: `Vous n'êtes pas assujetti à la TVA (CA sous ${formatCurrency(thresholdBase)}). Mention obligatoire sur les factures : "TVA non applicable — art. 293 B du CGI".`,
-      badgeVariant: 'secondary' as const,
-      bgClass: 'bg-green-50 border-green-200',
-      textClass: 'text-green-800',
-      iconClass: 'text-green-600',
-    },
-    depasse_base: {
-      icon: <ShieldAlert className="h-4 w-4" />,
-      label: 'Seuil de base dépassé',
-      description: `Votre CA dépasse ${formatCurrency(thresholdBase)}. Si votre CA de l'an passé était aussi supérieur, vous devez facturer la TVA cette année.`,
-      badgeVariant: 'secondary' as const,
-      bgClass: 'bg-amber-50 border-amber-200',
-      textClass: 'text-amber-800',
-      iconClass: 'text-amber-600',
-    },
-    depasse_majore: {
-      icon: <ShieldX className="h-4 w-4" />,
-      label: 'Seuil majoré dépassé',
-      description: `Votre CA dépasse ${formatCurrency(thresholdMajore)}. La TVA est obligatoire dès le jour du dépassement.`,
-      badgeVariant: 'destructive' as const,
-      bgClass: 'bg-red-50 border-red-200',
-      textClass: 'text-red-800',
-      iconClass: 'text-red-600',
-    },
-    assujetti: {
-      icon: <ShieldAlert className="h-4 w-4" />,
-      label: 'Assujetti à la TVA',
-      description: 'Vous collectez la TVA et pouvez déduire la TVA sur vos achats professionnels.',
-      badgeVariant: 'default' as const,
-      bgClass: 'bg-blue-50 border-blue-200',
-      textClass: 'text-blue-800',
-      iconClass: 'text-blue-600',
-    },
-  }[status]
+  const cfg = getStatusConfig(status, thresholdBase, thresholdMajore)
+  const { Icon } = cfg
 
   return (
-    <div className={cn('rounded-md border p-3 flex gap-3', config.bgClass)}>
-      <span className={cn('mt-0.5 shrink-0', config.iconClass)}>{config.icon}</span>
+    <div
+      className="flex gap-3 px-4 py-3 border-l-2"
+      style={{ borderColor: cfg.borderColor, background: cfg.bgColor }}
+    >
+      <Icon className="h-4 w-4 shrink-0 mt-0.5" style={{ color: cfg.textColor }} />
       <div className="space-y-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={cn('text-sm font-semibold', config.textClass)}>
-            {config.label}
+          <span className="font-data text-xs font-semibold tracking-widest" style={{ color: cfg.textColor }}>
+            {cfg.label}
           </span>
-          <Badge variant={config.badgeVariant} className="text-xs">
-            {status === 'franchise' ? 'OK' : status === 'assujetti' ? 'Activée' : 'Attention'}
-          </Badge>
+          <span
+            className="font-data text-xs border px-1.5 py-px leading-none"
+            style={{ borderColor: cfg.borderColor, color: cfg.textColor }}
+          >
+            {cfg.badge}
+          </span>
         </div>
-        <p className={cn('text-xs leading-relaxed', config.textClass)}>
-          {config.description}
-        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{cfg.description}</p>
       </div>
+    </div>
+  )
+}
+
+// ── Threshold block ────────────────────────────────────────────────────────────
+
+function ThresholdBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border border-border px-3 py-2">
+      <p className="mono-label text-muted-foreground/50 mb-1">{label}</p>
+      <p className="font-data text-sm font-medium text-foreground">{value}</p>
     </div>
   )
 }

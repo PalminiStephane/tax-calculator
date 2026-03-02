@@ -22,7 +22,22 @@
       "Bash(kill %1:*)",
       "Bash(npm install:*)",
       "Bash(npx shadcn@latest:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Palmini/Code/tax-calculator/.claude/prettier-hook.cjs"
+          }
+        ]
+      }
     ]
   }
 }

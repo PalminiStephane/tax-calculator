@@ -1,14 +1,5 @@
-import { Info } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ACTIVITY_LABELS, ACTIVITY_DESCRIPTIONS } from '@/lib/taxRules'
+import { cn } from '@/lib/utils'
 import type { ActivityType } from '@/types'
 
 interface ActivitySelectorProps {
@@ -24,44 +15,43 @@ const ACTIVITY_TYPES: ActivityType[] = [
   'BNC_CIPAV',
 ]
 
+const SHORT_LABELS: Record<ActivityType, string> = {
+  BIC_MARCHANDISES:        'BIC · MARCHANDS',
+  BIC_SERVICES_COMMERCIAUX:'BIC · COMM.',
+  BIC_SERVICES_ARTISANAUX: 'BIC · ARTISAN',
+  BNC_SSI:                 'BNC · SSI',
+  BNC_CIPAV:               'BNC · CIPAV',
+}
+
 export function ActivitySelector({ value, onChange }: ActivitySelectorProps) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1.5">
-        <Label htmlFor="activity-type" className="text-sm font-medium">
-          Type d'activité
-        </Label>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-xs">
-              <p className="text-xs">
-                Le type d'activité détermine vos taux de cotisations sociales,
-                votre abattement fiscal et vos plafonds de CA.
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+    <div className="space-y-4">
+      <p className="mono-label">Type d'activité</p>
+
+      {/* Pill selector */}
+      <div className="flex flex-wrap gap-2">
+        {ACTIVITY_TYPES.map((type) => (
+          <button
+            key={type}
+            onClick={() => onChange(type)}
+            className={cn(
+              value === type ? 'pill-active' : 'pill-inactive',
+            )}
+          >
+            {SHORT_LABELS[type]}
+          </button>
+        ))}
       </div>
 
-      <Select value={value} onValueChange={(v) => onChange(v as ActivityType)}>
-        <SelectTrigger id="activity-type" className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {ACTIVITY_TYPES.map((type) => (
-            <SelectItem key={type} value={type}>
-              {ACTIVITY_LABELS[type]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        {ACTIVITY_DESCRIPTIONS[value]}
-      </p>
+      {/* Description */}
+      <div className="border-l-2 border-primary/25 pl-4 space-y-0.5">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {ACTIVITY_DESCRIPTIONS[value]}
+        </p>
+        <p className="font-data text-xs text-muted-foreground/40 tracking-wide">
+          {ACTIVITY_LABELS[value]}
+        </p>
+      </div>
     </div>
   )
 }
